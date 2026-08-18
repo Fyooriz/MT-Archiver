@@ -1,0 +1,100 @@
+# Gradle files
+.gradle/
+build/
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Log/OS Files
+*.log
+.DS_Store
+
+# Android Studio
+.idea/
+.idea/caches/
+.idea/gradle.xml
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/modules/
+.idea/vcs.xml
+.idea/kotlinc.xml
+.idea/runConfigurations.xml
+.idea/codeStyles/
+.idea/inspectionProfiles/
+.idea/tasks.xml
+.idea/misc.xml
+.idea/encodings.xml
+.idea/shelf/
+
+# Keystore files
+*.jks
+*.keystore
+keystore.properties
+
+# External native build folder generated in Android Studio 2.2 and later
+.externalNativeBuild
+.cxx/
+
+# Google Services
+google-services.json
+
+# Freeline
+freeline.py
+freeline/
+freeline_files/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+fastlane/readme.html
+
+# Version control
+vcs.xml
+
+# lint
+lint-results.xml
+lint-results-*.xml
+lint-baseline.xml
+lint-baseline-*.xml
+
+# Android Profiling
+*.trace
+
+# Misc
+/captures/
+.externalNativeBuild
+.cxx
+
+# Node, Yarn
+node_modules/
+yarn-error.log
+
+# Mac files
+.DS_Store
+
+# Plugin files
+plugins/
+
+# Test reports
+test-results/
+
+# Generated files
+out/
+
+# Backup files
+*.bak
+*.swp
+*~
+
+# IDE
+.vscode/
+.fleet/
