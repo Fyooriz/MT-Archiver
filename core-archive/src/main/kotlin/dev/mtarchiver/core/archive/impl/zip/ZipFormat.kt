@@ -34,12 +34,21 @@ class ZipFormat : ArchiveFormat {
         }
     }
 
+    // Protect against zip-slip by validating canonical paths
+    private fun isPathSafe(destinationDir: File, entryName: String): Boolean {
+        val destFile = File(destinationDir, entryName)
+        val destCanonical = try { destFile.canonicalPath } catch (e: Exception) { return false }
+        val destDirCanonical = try { destinationDir.canonicalPath } catch (e: Exception) { return false }
+        return destCanonical.startsWith(destDirCanonical + File.separator) || destCanonical == destDirCanonical
+    }
+
     override suspend fun extract(
         archiveFile: File,
         destinationDir: File,
         password: String?,
         progressListener: ProgressListener?
     ): ExtractResult = withContext(Dispatchers.IO) {
+        val errors = mutableListOf<String>()
         try {
             val zip = if (!password.isNullOrEmpty()) ZipFile(archiveFile, password.toCharArray()) else ZipFile(archiveFile)
             val headers = zip.fileHeaders
@@ -49,21 +58,33 @@ class ZipFormat : ArchiveFormat {
 
             headers.forEachIndexed { idx, header ->
                 try {
-                    // extract single entry
+                    val entryName = header.fileName
+
+                    // Security: prevent zip-slip (path traversal)
+                    if (!isPathSafe(destinationDir, entryName)) {
+                        failed++
+                        errors.add("Skipped unsafe entry: $entryName")
+                        progressListener?.onProgress(extracted + failed, total, entryName)
+                        return@forEachIndexed
+                    }
+
+                    val outFile = File(destinationDir, entryName)
                     if (header.isDirectory) {
-                        val out = File(destinationDir, header.fileName)
-                        out.mkdirs()
+                        outFile.mkdirs()
                     } else {
+                        // ensure parent dirs exist
+                        outFile.parentFile?.let { parent -> if (!parent.exists()) parent.mkdirs() }
                         zip.extractFile(header, destinationDir.absolutePath)
                     }
                     extracted++
                 } catch (e: Exception) {
                     failed++
+                    errors.add("Failed to extract ${header.fileName}: ${e.message}")
                 }
                 progressListener?.onProgress(extracted + failed, total, header.fileName)
             }
 
-            ExtractResult(success = failed == 0, extractedCount = extracted, failedCount = failed, errors = if (failed == 0) emptyList() else listOf("Some entries failed to extract"))
+            ExtractResult(success = failed == 0, extractedCount = extracted, failedCount = failed, errors = errors)
         } catch (e: Exception) {
             ExtractResult(false, 0, 1, listOf(e.message ?: "Unknown error"))
         }
@@ -119,11 +140,7 @@ class ZipFormat : ArchiveFormat {
             val zip = ZipFile(archiveFile)
             // Attempt to read headers
             val headers = zip.fileHeaders
-            if (headers.isNotEmpty()) {
-                TestResult(isValid = true, errors = emptyList())
-            } else {
-                TestResult(isValid = true, errors = emptyList())
-            }
+            TestResult(isValid = true, errors = emptyList())
         } catch (e: Exception) {
             TestResult(false, listOf(e.message ?: "Unknown error"))
         }
