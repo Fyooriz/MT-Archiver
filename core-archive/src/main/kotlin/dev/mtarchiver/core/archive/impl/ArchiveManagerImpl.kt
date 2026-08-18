@@ -1,6 +1,7 @@
 package dev.mtarchiver.core.archive.impl
 
 import android.content.Context
+import android.util.Log
 import dev.mtarchiver.core.archive.api.*
 import dev.mtarchiver.core.archive.plugin.ArchiveFormatProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -23,12 +24,29 @@ class ArchiveManagerImpl @Inject constructor(
 
     init {
         loadFormats()
+        // Fallback registration in case ServiceLoader resources are stripped during packaging
+        if (formats.isEmpty()) {
+            try {
+                formats["zip"] = dev.mtarchiver.core.archive.impl.zip.ZipFormat()
+                Log.i("ArchiveManager", "Registered fallback ZipFormat")
+            } catch (t: Throwable) {
+                // ignore fallback failure in test/non-android env
+            }
+        }
     }
 
     private fun loadFormats() {
         // Load via ServiceLoader
-        ArchiveFormatProvider.loadAll().forEach { format ->
+        val loaded = ArchiveFormatProvider.loadAll()
+        loaded.forEach { format ->
             formats[format.name.lowercase()] = format
+        }
+
+        // Diagnostic log to help verify formats loaded at runtime
+        try {
+            Log.i("ArchiveManager", "Loaded archive formats: ${formats.keys}")
+        } catch (_: Throwable) {
+            // In JVM test environments android.util.Log may not exist — ignore.
         }
     }
 
